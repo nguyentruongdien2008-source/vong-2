@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Web Thi Tiếng Việt Lớp 1</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: auto; padding: 10px; }
+    .question { margin: 15px 0; padding-bottom: 10px; border-bottom: 1px solid #ddd; }
+    .timer { font-size: 20px; color: red; font-weight: bold; }
+    button { padding: 8px 14px; margin-top: 10px; cursor: pointer; }
+    input[type="text"] { padding: 6px; width: 160px; font-size: 16px; }
+    label { font-size: 16px; }
+  </style>
+</head>
+<body>
+
+<h1>Web Thi Tiếng Việt Lớp 1</h1>
+
+<div id="login">
+  <p>Nhập tên học sinh:</p>
+  <input id="studentName" placeholder="Nguyễn Yến, Tuấn, Khánh..." />
+  <button onclick="startExam()">Bắt đầu làm bài</button>
+  <p><small>Danh sách hợp lệ: Nguyễn Yến, Ninh Yến, Ngọc, Bảo, Hân, Khánh, Tuấn</small></p>
+</div>
+
+<div id="exam" style="display:none;">
+  <p class="timer">⏱ Thời gian còn lại: <span id="time">30:00</span></p>
+  <div id="questionBox"></div>
+  <button onclick="submitExam()">Nộp bài</button>
+</div>
+
+<div id="result" style="display:none;"></div>
+
+<script>
+const students = ["Nguyễn Yến", "Ninh Yến", "Ngọc", "Bảo", "Hân", "Khánh", "Tuấn"];
+
+const questions = [
+  { type: "mcq", question: "Chọn tiếng bắt đầu bằng chữ 'b':", options: ["ba", "ca", "da"], answer: "ba" },
+  { type: "input", question: "Điền chữ còn thiếu: _a (ba)", answer: "b" },
+  { type: "mcq", question: "Tiếng nào có vần 'an'?", options: ["lan", "la", "li"], answer: "lan" },
+  { type: "input", question: "Điền vần còn thiếu: b__ (ban)", answer: "an" },
+  { type: "mcq", question: "Chọn tiếng có dấu sắc:", options: ["ma", "má", "mà"], answer: "má" },
+  { type: "input", question: "Điền dấu thích hợp: m_ (má)", answer: "á" },
+
+  { type: "mcq", question: "Tiếng nào có vần 'at'?", options: ["bát", "ba", "ban"], answer: "bát" },
+  { type: "input", question: "Điền chữ còn thiếu: c__ (con)", answer: "o" },
+  { type: "mcq", question: "Chọn tiếng có dấu huyền:", options: ["bà", "ba", "bá"], answer: "bà" },
+  { type: "input", question: "Điền chữ còn thiếu: _e (me)", answer: "m" },
+
+  { type: "mcq", question: "Tiếng nào có vần 'ong'?", options: ["bóng", "bó", "bo"], answer: "bóng" },
+  { type: "input", question: "Điền vần còn thiếu: c__ (cong)", answer: "ong" },
+  { type: "mcq", question: "Chọn tiếng có dấu hỏi:", options: ["mả", "mà", "má"], answer: "mả" },
+  { type: "input", question: "Điền dấu thích hợp: m_ (mà)", answer: "à" },
+  { type: "mcq", question: "Tiếng nào có vần 'en'?", options: ["đen", "da", "di"], answer: "đen" },
+
+  { type: "input", question: "Điền chữ còn thiếu: t__ (tay)", answer: "a" },
+  { type: "mcq", question: "Chọn tiếng có vần 'et':", options: ["bét", "ba", "bò"], answer: "bét" },
+  { type: "input", question: "Điền chữ còn thiếu: _o (to)", answer: "t" },
+  { type: "mcq", question: "Tiếng nào có dấu ngã?", options: ["mã", "ma", "má"], answer: "mã" },
+  { type: "input", question: "Điền chữ còn thiếu: c__ (cá)", answer: "á" },
+
+  { type: "mcq", question: "Tiếng nào có vần 'im'?", options: ["chim", "cha", "cho"], answer: "chim" },
+  { type: "input", question: "Điền chữ còn thiếu: b__ (bé)", answer: "é" },
+  { type: "mcq", question: "Chọn tiếng có vần 'oa':", options: ["hoa", "ha", "ho"], answer: "hoa" },
+  { type: "input", question: "Điền chữ còn thiếu: n__ (na)", answer: "a" },
+  { type: "mcq", question: "Tiếng nào có dấu nặng?", options: ["mạ", "ma", "má"], answer: "mạ" },
+
+  { type: "input", question: "Điền chữ còn thiếu: l__ (lá)", answer: "á" },
+  { type: "mcq", question: "Chọn tiếng có vần 'eo':", options: ["heo", "ha", "ho"], answer: "heo" },
+  { type: "input", question: "Điền chữ còn thiếu: c__ (co)", answer: "o" },
+  { type: "mcq", question: "Tiếng nào có vần 'ua'?", options: ["mua", "ma", "me"], answer: "mua" },
+  { type: "input", question: "Điền chữ còn thiếu: t__ (to)", answer: "o" }
+];
+
+let selectedQuestions = [];
+let timer;
+let timeLeft = 1800;
+
+function startExam() {
+  const name = document.getElementById("studentName").value.trim();
+  if (!students.includes(name)) {
+    alert("Tên không hợp lệ! Hãy nhập đúng tên trong danh sách.");
+    return;
+  }
+  document.getElementById("login").style.display = "none";
+  document.getElementById("exam").style.display = "block";
+  selectedQuestions = shuffle([...questions]).slice(0, 30);
+  renderQuestions();
+  startTimer();
+}
+
+function renderQuestions() {
+  const box = document.getElementById("questionBox");
+  box.innerHTML = "";
+  selectedQuestions.forEach((q, i) => {
+    let html = `<div class="question"><p><b>Câu ${i+1}:</b> ${q.question}</p>`;
+    if (q.type === "mcq") {
+      q.options.forEach(opt => {
+        html += `<label><input type="radio" name="q${i}" value="${opt}"> ${opt}</label><br>`;
+      });
+    } else {
+      html += `<input type="text" name="q${i}" placeholder="Nhập đáp án..." />`;
+    }
+    html += `</div>`;
+    box.innerHTML += html;
+  });
+}
+
+function startTimer() {
+  timer = setInterval(() => {
+    timeLeft--;
+    const min = Math.floor(timeLeft / 60);
+    const sec = timeLeft % 60;
+    document.getElementById("time").textContent = `${min}:${sec.toString().padStart(2, "0")}`;
+    if (timeLeft <= 0) submitExam();
+  }, 1000);
+}
+
+function submitExam() {
+  clearInterval(timer);
+  let correct = 0;
+  let resultHTML = "<h2>Kết quả</h2>";
+  selectedQuestions.forEach((q, i) => {
+    let userAnswer = "";
+    if (q.type === "mcq") {
+      const selected = document.querySelector(`input[name="q${i}"]:checked`);
+      userAnswer = selected ? selected.value : "";
+    } else {
+      const input = document.querySelector(`input[name="q${i}"]`);
+      userAnswer = input ? input.value.trim() : "";
+    }
+    const isCorrect = userAnswer === q.answer;
+    if (isCorrect) correct++;
+    resultHTML += `<p>Câu ${i+1}: ${isCorrect ? "✅ Đúng" : "❌ Sai"} | Bạn làm: ${userAnswer || "Chưa làm"} | Đáp án: <b>${q.answer}</b></p>`;
+  });
+  resultHTML += `<h3>🏆 Tổng kết: Đúng ${correct}/30 – Sai ${30 - correct}</h3>`;
+  document.getElementById("exam").style.display = "none";
+  const resultBox = document.getElementById("result");
+  resultBox.style.display = "block";
+  resultBox.innerHTML = resultHTML;
+}
+
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+</script>
+
+</body>
+</html>
